@@ -1,0 +1,18 @@
++------------------------------------+------------------------------+-------------------------------------+
+| Threat Vector                      | Potential Exploit            | Belgradum Defense Mechanism         |
++------------------------------------+------------------------------+-------------------------------------+
+| Deserialization Heap Exhaustion    | Attacker passes huge vectors | #[account(zero_copy)] & C-repr      |
+|                                    | triggering OOM limits        | fixed arrays without alloc/realloc  |
++------------------------------------+------------------------------+-------------------------------------+
+| Telemetry Spoofing / Sybil Attack  | Fake or simulated data       | Instruction sysvar precompile check |
+|                                    | pumped by unauthorized nodes | asserting Ed25519 program in index-1|
++------------------------------------+------------------------------+-------------------------------------+
+| Reentrancy via CPI Transfer        | Token fallback hook cycles   | Checks-Effects-Interactions: drop() |
+|                                    | draining escrow vault        | on buffer before token transfer CPI |
++------------------------------------+------------------------------+-------------------------------------+
+| Epoch Front-Running / Squatting    | Premature settlement before  | Strict slot algebra check:          |
+|                                    | telemetry stream closes      | active_epoch > target_epoch         |
++------------------------------------+------------------------------+-------------------------------------+
+| Lamport Drain via Account Closing  | Unsafe rent withdrawal       | Strict 0-lamport wipe and           |
+|                                    | leaving dangling accounts    | explicit memory zeroization         |
++------------------------------------+------------------------------+-------------------------------------+

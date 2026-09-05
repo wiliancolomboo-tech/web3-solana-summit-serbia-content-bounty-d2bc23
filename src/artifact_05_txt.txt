@@ -1,0 +1,10 @@
++---------------------------------------------------------------------------------------------------------+
+|                                    COMPUTE UNIT PROFILE BREAKDOWN                                       |
++------------------------------------+----------------+------------------+--------------------------------+
+| Instruction                        | Consumed (CU)  | Limit Allocated  | Optimization Technique Applied |
++------------------------------------+----------------+------------------+--------------------------------+
+| initialize_engine                  | 6,240 CU       | 20,000 CU        | Bounded PDA space allocation   |
+| register_node                      | 8,420 CU       | 25,000 CU        | Fixed-width byte arrays        |
+| ingest_telemetry_batch (8 items)   | 14,180 CU      | 50,000 CU        | Zero-copy pointer dereference  |
+| settle_epoch_and_reclaim           | 19,850 CU      | 60,000 CU        | Zero-heap dealloc + direct CPI |
++------------------------------------+----------------+------------------+--------------------------------+

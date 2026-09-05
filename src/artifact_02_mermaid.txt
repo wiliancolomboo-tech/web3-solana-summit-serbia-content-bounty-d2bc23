@@ -1,0 +1,55 @@
+flowchart TD
+    subgraph ClientAndHardware["Edge Device / Keeper Infrastructure"]
+        HW[Edge Telemetry Device / Hardware HSM] -->|Sign Telemetry Payload| BNDL[Atomic Transaction Bundle Builder]
+        KP[Automated Keeper Bot] -->|Monitor Epoch Expiry| SWP[Reclaim & Settle Crank]
+    end
+
+    subgraph RuntimePrecompiles["Native Solana Sysvars & Precompiles"]
+        ED25519[Ed25519 Program: Ed25519SigVerify111111111111111111111111111]
+        SYSVAR_IX[Instructions Sysvar: Sysvar1nstructions11111111111111111]
+    end
+
+    subgraph BelgradumProgram["Belgradum On-Chain Engine (Program ID: Be1grade... )"]
+        IX_INIT[Instruction: initialize_engine]
+        IX_REG[Instruction: register_node]
+        IX_INGEST[Instruction: ingest_telemetry_batch]
+        IX_SETTLE[Instruction: settle_epoch_and_reclaim]
+        
+        GUARD_SIGNER{Signer & Authority Guard}
+        GUARD_INTROSPECT{Verify Ed25519 Precompile in IX Bundle}
+        GUARD_BOUNDS{Telemetry Bounds & Delta Check}
+        GUARD_EPOCH{Epoch Window Check}
+    end
+
+    subgraph StateAccounts["Program Derived Addresses (Zero-Copy Mapped)"]
+        CONF_PDA[("EngineConfig PDA<br/>seeds = ['engine_config', admin]")]
+        NODE_PDA[("NodeRegistry PDA<br/>seeds = ['node', engine_config, node_pubkey]")]
+        BUFFER_PDA[("TelemetryBuffer PDA (Zero-Copy)<br/>seeds = ['buffer', node_pubkey, epoch_index]")]
+        ESCROW_PDA[("RewardEscrow PDA<br/>seeds = ['escrow', engine_config]")]
+    end
+
+    subgraph SettlementLayer["SPL Token Program / Vault"]
+        MINT[DePIN Reward Mint]
+        REWARD_VAULT[Program Controlled Vault]
+        NODE_ATA[Node Operator Token Account]
+    end
+
+    %% Wiring Flows
+    BNDL -->|1. Inject Ed25519 Verification IX| ED25519
+    BNDL -->|2. Invoke ingest_telemetry_batch| IX_INGEST
+
+    IX_INGEST --> GUARD_INTROSPECT
+    GUARD_INTROSPECT -.->|Introspect Program Index via CPI| SYSVAR_IX
+    GUARD_INTROSPECT -->|Passed| GUARD_SIGNER
+    GUARD_SIGNER -->|Validate Node Authority| NODE_PDA
+    GUARD_SIGNER --> GUARD_BOUNDS
+    
+    GUARD_BOUNDS -->|In-Place Zero-Copy Slice Update| BUFFER_PDA
+    BUFFER_PDA -->|Update Rolling Average & Metrics| NODE_PDA
+
+    SWP -->|Invoke settle_epoch_and_reclaim| IX_SETTLE
+    IX_SETTLE --> GUARD_EPOCH
+    GUARD_EPOCH -->|Verify Epoch Expired| BUFFER_PDA
+    IX_SETTLE -->|CPI: Transfer SPL Reward Tokens| REWARD_VAULT
+    REWARD_VAULT -->|Release Attestation Rewards| NODE_ATA
+    IX_SETTLE -->|Reclaim Storage Lamports| NODE_PDA
