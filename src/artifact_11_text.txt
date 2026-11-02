@@ -1,0 +1,10 @@
+summit_pass protocol integration & security test matrix
+    ✔ 1. Initializes the Summit Event with Escrow Vault (324ms)
+    ✔ 2. Attendees purchase a summit ticket, funding the Vault PDA (452ms)
+    ✔ 3. Attendee delegates an Ephemeral Session Key for kiosk check-in (289ms)
+    ✔ 4. Venue Door Kiosk executes gasless verification via Ephemeral Signer (212ms)
+    ✔ 5. Security Guard: Prevents double check-in replay attack (148ms)
+    ✔ 6. Security Guard: Rejects malicious attacker attempting to withdraw event proceeds (178ms)
+    ✔ 7. Authority withdraws proceeds safely without violating rent-exemption (310ms)
+
+  7 passing (2.1s)

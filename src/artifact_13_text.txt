@@ -1,9 +1,8 @@
-Belgradum Engine: Production DePIN Telemetry Test Matrix
-    ✔ Initializes Engine with Config and Escrow Vault (420ms)
-    ✔ Registers Edge Hardware Node under deterministic PDA (380ms)
-	Batch Ingestion CU Consumed: 14180 CU
-    ✔ Executes zero-copy telemetry batch ingest with Ed25519 precompile guard (540ms)
-    ✔ Rejects telemetry batch missing Ed25519 precompile verification (190ms)
-    ✔ Settles epoch and reclaims storage rent back to keeper (2100ms)
+summit_engine test matrix
+    ✔ Initializes the Solana Summit Serbia configuration (425ms)
+    ✔ Registers an attendee and deducts ticket fee (312ms)
+    ✔ Executes attendee check-in and logs timestamp (289ms)
+    ✔ Prevents double check-in (Sybil/Replay Defense) (198ms)
+    ✔ Tips a speaker via direct SPL transfer CPI (340ms)
 
-  5 passing (3.63s)
+  5 passing (2s)

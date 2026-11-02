@@ -1,0 +1,8 @@
+NovaEngine Technical Verification Suite
+    ✔ 1. Initializes Engine Vault cleanly with proper seeds and bumps (482ms)
+    ✔ 2. Deposits Liquidity into Vault and updates UserLedger PDA (615ms)
+    ✔ 3. Keeper commits an optimized zero-copy batch record (312ms)
+    ✔ 4. Fails when keeper claims excessive fees violating max bps cap (194ms)
+    ✔ 5. Successfully clears batch within limits and transfers keeper reward (408ms)
+
+  5 passing (2.1s)

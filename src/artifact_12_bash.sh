@@ -1,11 +1,8 @@
-# Set endpoint to Solana Devnet
+# Configure Solana CLI to Devnet
 solana config set --url https://api.devnet.solana.com
 
-# Airdrop deployment SOL
+# Airdrop SOL for deployment fees
 solana airdrop 2
 
-# Deploy the zero-copy program
-anchor deploy --program-name belgradum_engine --provider.cluster devnet
-
-# Verify program account allocation
-solana account $(solana address -k target/deploy/belgradum_engine-keypair.json)
+# Deploy
+anchor deploy --provider.cluster Devnet

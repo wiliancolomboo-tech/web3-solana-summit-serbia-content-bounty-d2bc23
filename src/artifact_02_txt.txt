@@ -1,0 +1,9 @@
+---
+
+## 3) Complete Implementation / Solution Code / QA Test Matrix
+
+---
+
+### 3.1 Anchor Program (`programs/summit_content_bounty/src/lib.rs`)
+
+> Replace `declare_id!` with your deployed Program ID.

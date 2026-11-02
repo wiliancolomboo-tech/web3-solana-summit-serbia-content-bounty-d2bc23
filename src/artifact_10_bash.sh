@@ -1,1 +1,1 @@
-solana address -k target/deploy/belgradum_engine-keypair.json
+anchor test

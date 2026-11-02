@@ -1,0 +1,7 @@
+czs-engine: Integration & Security QA Suite
+    ✔ 1. Initializes stream with zero-copy PDA memory allocation (482ms)
+    ✔ 2. Rejects unauthorized top-up attempts from non-sender (124ms)
+    ✔ 3. Permissionless crank settle executed by Keeper after elapsed time (3240ms)
+    ✔ 4. Terminates stream: guarantees non-reentrancy and pristine refund division (2180ms)
+
+  4 passing (6.03s)

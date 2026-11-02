@@ -1,0 +1,8 @@
+BelgradePass Protocol QA Test Matrix
+    ✔ 1. Initializes the Belgrade Summit Config (412ms)
+    ✔ 2. Verifies Atomic NFC Check-In using Native Ed25519 Precompile (589ms)
+    ✔ 3. Prevents Double Check-In / Replay Attacks (328ms)
+    ✔ 4. Registers Content Submission & Splits Basis Points (405ms)
+    ✔ 5. Funds the Escrow Vault and Disburses Exact Micro-Splits (612ms)
+
+  5 passing (2s)

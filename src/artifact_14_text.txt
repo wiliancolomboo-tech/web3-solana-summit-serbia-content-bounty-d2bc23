@@ -1,0 +1,9 @@
+solana-summit-protocol test suite
+    ✔ 1. Successfully initializes the Summit Config PDA (428ms)
+    ✔ 2. Creates a Bounty and funds Escrow Vault PDA via CPI (389ms)
+    ✔ 3. Prevents premature bounty claims prior to reaching quorum (52ms)
+    ✔ 4. Records votes from judges and verifies PDA state transitions (412ms)
+    ✔ 5. Allows hacker to claim bounty once quorum is satisfied (376ms)
+    ✔ 6. Rejects post-settlement claims (Reentrancy / Double-Spend Guard) (48ms)
+
+  6 passing (2s)

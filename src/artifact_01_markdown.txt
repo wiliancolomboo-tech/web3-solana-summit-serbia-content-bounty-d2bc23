@@ -1,0 +1,25 @@
+# Solana Summit Serbia Content Bounty Program  
+## Production-Grade Technical Deliverable
+
+## 1) Executive Technical Summary & System Value Proposition
+
+### What this is
+A **programmable summit content bounty engine** on Solana that allows organizers to run competitive content contests with:
+
+- Deterministic on-chain registration of a bounty (stateful timeline + escrow)
+- Trust-minimized content submission + review workflow
+- Capped judge voting (1 vote per judge per submission) via PDA anti-duplication
+- On-chain top-N leaderboard maintenance at review time
+- Keeper-driven state progression and payout execution
+- Secure, atomic lamport payouts from bounty escrow to winner wallets
+
+### Why this wins for a summit content bounty
+- **Self-service & auditable:** all bounty lifecycle transitions and ranking logic are transparent on-chain.
+- **Low-friction participation:** creators, judges, and keeper only need wallets; no off-chain admin database.
+- **Anti-gaming:** one vote per judge per submission using vote PDAs; top-N logic includes minimum-review guard.
+- **Operationally robust:** keeper loop removes manual cron dependency; anyone can trigger state refresh/payout progression once deadlines hit.
+- **Compute-conscious:** fixed-size arrays / bounded loops (top-10), short fixed-length metadata, minimal CPI surface.
+
+---
+
+## 2) Visual Architecture Flowchart (Mermaid)

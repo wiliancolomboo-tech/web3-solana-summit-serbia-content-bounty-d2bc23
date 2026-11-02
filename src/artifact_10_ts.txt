@@ -1,0 +1,9 @@
+await program.methods.createEvent(
+  new BN(eventId),
+  "Track Bounty",
+  new BN(startTs),
+  new BN(endTs),
+  new BN(1_000_000_000), // 1 SOL
+  2,
+  [judge1, judge2]
+).accounts({...}).rpc();

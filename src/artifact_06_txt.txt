@@ -1,18 +1,47 @@
-+------------------------------------+------------------------------+-------------------------------------+
-| Threat Vector                      | Potential Exploit            | Belgradum Defense Mechanism         |
-+------------------------------------+------------------------------+-------------------------------------+
-| Deserialization Heap Exhaustion    | Attacker passes huge vectors | #[account(zero_copy)] & C-repr      |
-|                                    | triggering OOM limits        | fixed arrays without alloc/realloc  |
-+------------------------------------+------------------------------+-------------------------------------+
-| Telemetry Spoofing / Sybil Attack  | Fake or simulated data       | Instruction sysvar precompile check |
-|                                    | pumped by unauthorized nodes | asserting Ed25519 program in index-1|
-+------------------------------------+------------------------------+-------------------------------------+
-| Reentrancy via CPI Transfer        | Token fallback hook cycles   | Checks-Effects-Interactions: drop() |
-|                                    | draining escrow vault        | on buffer before token transfer CPI |
-+------------------------------------+------------------------------+-------------------------------------+
-| Epoch Front-Running / Squatting    | Premature settlement before  | Strict slot algebra check:          |
-|                                    | telemetry stream closes      | active_epoch > target_epoch         |
-+------------------------------------+------------------------------+-------------------------------------+
-| Lamport Drain via Account Closing  | Unsafe rent withdrawal       | Strict 0-lamport wipe and           |
-|                                    | leaving dangling accounts    | explicit memory zeroization         |
-+------------------------------------+------------------------------+-------------------------------------+
+[00:00 - 00:15] TITLE SLIDE & THE HOOK
+Visual:
+- Split screen: Left side shows a frustrated attendee tapping a phone screen with 5 sequential 
+  Phantom approval prompts. Right side shows "SummitMesh: Zero-Friction Solana Summit Protocol".
+Audio (Narrator):
+"Web3 developer summits are the ultimate proving ground for Solana's speed. Yet, when 500 builders
+arrive in Belgrade, how do we track workshop completions and distribute hackathon credentials?
+By making them sign 20 wallet popups? Absolutely not. Welcome to SummitMesh."
+
+[00:15 - 00:45] ARCHITECTURE & BITMASK STATE COMPRESSION
+Visual:
+- Terminal screen showing Anchor test execution. Highlight the CU metric: "11,380 Compute Units".
+- Visual animation of an 8-byte uint64 bitmask shifting dynamically as workshops 0 through 7
+  are verified.
+Audio (Narrator):
+"SummitMesh solves the venue UX crisis through two cryptographic primitives. First: Bitmapped Attendance
+Registers. Instead of bloated vector storage or expensive Merkle trees on-chain, we store 64 distinct 
+workshop stages in a single 8-byte bitfield PDA. One bitwise OR check-in costs barely 11,000 Compute 
+Units—allowing entire summit stages to check in concurrently on a single block."
+
+[00:45 - 01:15] EPHEMERAL SESSION KEYS & ZERO-PROMPT CHECK-IN
+Visual:
+- Live demo of mobile device tapping an NFC puck / scanning a QR code at the Belgrade Belgrade Fair stage.
+- Green checkmark appears instantaneously (<400ms finality) with zero wallet popups.
+Audio (Narrator):
+"Second: Ephemeral Session Key Delegation. At summit registration, attendees sign once to authorize an
+ephemeral session key with a strict time-to-live. From that moment on, attendee interaction at every 
+Belgrade workshop, lightning talk, or code challenge executes smoothly under the hood. No manual
+wallet approvals, no UX friction, complete cryptographic security."
+
+[01:15 - 01:45] TOKEN-2022 TRANSFER HOOK INTEGRATION
+Visual:
+- Code walkthrough highlighting `execute_transfer_hook` in lib.rs.
+- Demonstration of an attempted unauthorized transfer on Solscan reverting with 
+  "TransfersLockedBySummitPolicy".
+Audio (Narrator):
+"For summit badges and VIP access, we enforce programmable transfers via SPL Token-2022 Transfer Hooks.
+Organizers maintain absolute authority to prevent ticket scalping, while retaining programmatic freedom 
+to enable credential portability the moment the summit concludes."
+
+[01:45 - 02:00] THE CLOSING PITCH
+Visual:
+- Full test suite passing (7/7 tests green). Repository URL and live devnet addresses displayed.
+Audio (Narrator):
+"SummitMesh isn't just summit content—it's production-ready Solana infrastructure built specifically
+for the builders of Solana Summit Serbia. Ultra-low CU, unbreakable security, and unmatched user 
+experience. This is how Solana conquers the world. Vote SummitMesh for First Place!"

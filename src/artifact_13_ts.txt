@@ -1,0 +1,4 @@
+await program.methods.settleEvent(new BN(eventId), [winner1, winner2])
+  .accounts({...})
+  .remainingAccounts([{ pubkey: winner1, isWritable: true, isSigner: false }, { pubkey: winner2, isWritable: true, isSigner: false }])
+  .signers([keeper]).rpc();

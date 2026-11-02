@@ -1,0 +1,49 @@
+flowchart TD
+    subgraph ClientLayer [Client & Gateway Layer]
+        Organizer[Event Organizer / Summit Admin]
+        Attendee[Attendee / Cold Wallet]
+        DoorKiosk[Venue Door Kiosk / Ephemeral Scanner]
+    end
+
+    subgraph ProgramLayer [SummitPass Core Engine: Anchor Program]
+        InitEvent[Instruction: initialize_event]
+        BuyTicket[Instruction: purchase_ticket]
+        AuthSession[Instruction: authorize_session_signer]
+        CheckIn[Instruction: verify_and_check_in]
+        WithdrawFunds[Instruction: withdraw_proceeds]
+    end
+
+    subgraph StateLayer [Solana Account State & PDAs]
+        EventPDA["Event Account PDA<br/>seeds=['event', authority, event_id]<br/>• Tiers, Cap, Revenue, Session Root"]
+        TicketPDA["Ticket Account PDA<br/>seeds=['ticket', event, attendee]<br/>• Tier, Check-in Timestamp, Status"]
+        SessionPDA["Session Signer PDA<br/>seeds=['session', event, attendee]<br/>• Ephemeral Pubkey, Valid Until"]
+        VaultPDA["Escrow Vault PDA<br/>seeds=['vault', event]<br/>• Lamports Balance"]
+    end
+
+    subgraph SystemPrograms [Core Solana Programs]
+        SystemProg[System Program]
+        TokenProg[SPL Token Program / Associated Token]
+        SysVarClock[Clock Sysvar]
+    end
+
+    %% Flow interactions
+    Organizer -->|1. Initialize Summit| InitEvent
+    InitEvent -->|Derives & Allocates| EventPDA
+    InitEvent -->|Derives Escrow| VaultPDA
+
+    Attendee -->|2. Purchase Pass| BuyTicket
+    BuyTicket -->|Deposit SOL/Tokens| VaultPDA
+    BuyTicket -->|Initializes| TicketPDA
+    BuyTicket -.->|CPI Transfer| SystemProg
+
+    Attendee -->|3. Delegate Ephemeral Scanner| AuthSession
+    AuthSession -->|Sets Ephemeral Signer| SessionPDA
+
+    DoorKiosk -->|4. Scan QR / Sub-second Check-In| CheckIn
+    CheckIn -->|Validates Expiry| SysVarClock
+    CheckIn -->|Verifies Ephemeral Signer| SessionPDA
+    CheckIn -->|Mutates State: is_checked_in = true| TicketPDA
+
+    Organizer -->|5. Settle Summit Revenues| WithdrawFunds
+    WithdrawFunds -->|Reentrancy-Guarded Transfer| VaultPDA
+    WithdrawFunds -->|Withdraw Lamports| Organizer

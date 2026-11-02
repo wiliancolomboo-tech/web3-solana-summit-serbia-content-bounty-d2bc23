@@ -1,0 +1,13 @@
+Solana Summit Serbia - ZSE-Engine Benchmarks
+    ✔ Step 1: Initializes the high-throughput settlement market (412ms)
+    ✔ Step 2: Initializes an Ephemeral Zero-Copy Batch Account (189ms)
+    ✔ Step 3: Appends matched fills using direct zero-copy buffer writes (198ms)
+
+======================================================
+  SOLANA SUMMIT BENCHMARK: BATCH SETTLEMENT
+  Compute Units Consumed: 38,421 CU
+======================================================
+
+    ✔ Step 4: Executes batch settlement with atomic CPI liquidity routing and logs CUs (482ms)
+
+  4 passing (2s)

@@ -1,0 +1,8 @@
+// initialize_protocol
+await program.methods.initializeProtocol(keeperPubkey).accounts({protocol, admin}).rpc();
+
+
+// create_event
+await program.methods.createEvent(eventId, title, startTs, votingEndTs, rewardPerWinner, winnerCount, cap).accounts({...}).rpc();
+
+// register + submit + vote + finalize + claim...

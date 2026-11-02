@@ -1,55 +1,50 @@
 flowchart TD
-    subgraph ClientAndHardware["Edge Device / Keeper Infrastructure"]
-        HW[Edge Telemetry Device / Hardware HSM] -->|Sign Telemetry Payload| BNDL[Atomic Transaction Bundle Builder]
-        KP[Automated Keeper Bot] -->|Monitor Epoch Expiry| SWP[Reclaim & Settle Crank]
+    %% Base Styling
+    classDef client fill:#1e1e2e,stroke:#89b4fa,stroke-width:2px,color:#cdd6f4;
+    classDef program fill:#181825,stroke:#a6e3a1,stroke-width:2px,color:#cdd6f4;
+    classDef pda fill:#313244,stroke:#f9e2af,stroke-width:2px,color:#cdd6f4;
+    classDef security fill:#45475a,stroke:#f38ba8,stroke-width:2px,color:#cdd6f4;
+
+    subgraph Client Layer ["Client & Physical Venue Touchpoints"]
+        A[Primary Attendee Wallet]:::client
+        B[Ephemeral Mobile Session Key]:::client
+        C[Summit Admin / Registrar]:::client
     end
 
-    subgraph RuntimePrecompiles["Native Solana Sysvars & Precompiles"]
-        ED25519[Ed25519 Program: Ed25519SigVerify111111111111111111111111111]
-        SYSVAR_IX[Instructions Sysvar: Sysvar1nstructions11111111111111111]
+    subgraph Program Layer ["SummitMesh Anchor Program (B9f...7xQ)"]
+        InitSummit[init_summit_event]:::program
+        DelSession[delegate_session_key]:::program
+        CheckIn[record_workshop_attendance]:::program
+        HookExec[execute_transfer_hook]:::program
     end
 
-    subgraph BelgradumProgram["Belgradum On-Chain Engine (Program ID: Be1grade... )"]
-        IX_INIT[Instruction: initialize_engine]
-        IX_REG[Instruction: register_node]
-        IX_INGEST[Instruction: ingest_telemetry_batch]
-        IX_SETTLE[Instruction: settle_epoch_and_reclaim]
-        
-        GUARD_SIGNER{Signer & Authority Guard}
-        GUARD_INTROSPECT{Verify Ed25519 Precompile in IX Bundle}
-        GUARD_BOUNDS{Telemetry Bounds & Delta Check}
-        GUARD_EPOCH{Epoch Window Check}
+    subgraph PDA State Layer ["On-Chain State Accounts"]
+        SummitState["Summit State PDA<br/>seeds: ['summit', summit_id]<br/>bitmap_stages: u64, root: [32]u8"]:::pda
+        SessionAccount["Session Authority PDA<br/>seeds: ['session', summit_id, attendee]<br/>target_key: Pubkey, valid_until: i64"]:::pda
+        AttendeeRecord["Attendee Credential PDA<br/>seeds: ['attendee', summit_id, attendee]<br/>attendance_mask: u64, points: u32"]:::pda
+        ExtraMetas["Token-2022 ExtraAccountMetas PDA<br/>seeds: ['extra-account-metas', mint]"]:::pda
     end
 
-    subgraph StateAccounts["Program Derived Addresses (Zero-Copy Mapped)"]
-        CONF_PDA[("EngineConfig PDA<br/>seeds = ['engine_config', admin]")]
-        NODE_PDA[("NodeRegistry PDA<br/>seeds = ['node', engine_config, node_pubkey]")]
-        BUFFER_PDA[("TelemetryBuffer PDA (Zero-Copy)<br/>seeds = ['buffer', node_pubkey, epoch_index]")]
-        ESCROW_PDA[("RewardEscrow PDA<br/>seeds = ['escrow', engine_config]")]
+    subgraph Token2022 Layer ["SPL Token-2022 Pipeline"]
+        MintAccount["Summit Badge Mint<br/>(Extensions: Transfer Hook, Metadata)"]:::pda
+        TokenTrans["Transfer Instruction CPI"]:::security
     end
 
-    subgraph SettlementLayer["SPL Token Program / Vault"]
-        MINT[DePIN Reward Mint]
-        REWARD_VAULT[Program Controlled Vault]
-        NODE_ATA[Node Operator Token Account]
-    end
+    %% Interactions
+    C -->|1. Initializes Summit Scope| InitSummit
+    InitSummit -->|Allocates & Locks Rent| SummitState
 
-    %% Wiring Flows
-    BNDL -->|1. Inject Ed25519 Verification IX| ED25519
-    BNDL -->|2. Invoke ingest_telemetry_batch| IX_INGEST
+    A -->|2. Signs Once at Registration Desk| DelSession
+    DelSession -->|Derives & Stores Session Authority| SessionAccount
 
-    IX_INGEST --> GUARD_INTROSPECT
-    GUARD_INTROSPECT -.->|Introspect Program Index via CPI| SYSVAR_IX
-    GUARD_INTROSPECT -->|Passed| GUARD_SIGNER
-    GUARD_SIGNER -->|Validate Node Authority| NODE_PDA
-    GUARD_SIGNER --> GUARD_BOUNDS
-    
-    GUARD_BOUNDS -->|In-Place Zero-Copy Slice Update| BUFFER_PDA
-    BUFFER_PDA -->|Update Rolling Average & Metrics| NODE_PDA
+    B -->|3. Workshop Check-In via QR/NFC (No Wallet Prompt)| CheckIn
+    CheckIn -->|Validates Signer == session.target_key| SessionAccount
+    CheckIn -->|Validates Clock::get().unix_timestamp <= valid_until| SessionAccount
+    CheckIn -->|Bitwise OR Attendance Bitmask (1 << workshop_id)| AttendeeRecord
+    CheckIn -->|Increments Summit Stage XP Points| AttendeeRecord
 
-    SWP -->|Invoke settle_epoch_and_reclaim| IX_SETTLE
-    IX_SETTLE --> GUARD_EPOCH
-    GUARD_EPOCH -->|Verify Epoch Expired| BUFFER_PDA
-    IX_SETTLE -->|CPI: Transfer SPL Reward Tokens| REWARD_VAULT
-    REWARD_VAULT -->|Release Attestation Rewards| NODE_ATA
-    IX_SETTLE -->|Reclaim Storage Lamports| NODE_PDA
+    A -->|4. Attempts Badge Transfer| TokenTrans
+    TokenTrans -->|Triggers CPI via ExtraAccountMetas| HookExec
+    HookExec -->|Reads Extra Accounts Metadata| ExtraMetas
+    HookExec -->|Asserts Anti-Scalping Policy or Admin Signer| SummitState
+    HookExec -.->|Revert on Unauthorized Transfer| TokenTrans

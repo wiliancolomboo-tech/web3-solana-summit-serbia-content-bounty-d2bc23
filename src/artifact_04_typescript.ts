@@ -1,289 +1,189 @@
 import * as anchor from "@coral-xyz/anchor";
-import { Program, web3, BN } from "@coral-xyz/anchor";
-import { BelgradumEngine } from "../target/types/belgradum_engine";
-import {
-  TOKEN_PROGRAM_ID,
-  createMint,
-  createAccount,
-  mintTo,
-  getAccount,
-} from "@solana/spl-token";
-import { assert, expect } from "chai";
-import * as nacl from "tweetnacl";
+import { Program } from "@coral-xyz/anchor";
+import { SummitMesh } from "../target/types/summit_mesh";
+import { Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
+import { expect } from "chai";
 
-describe("Belgradum Engine: Production DePIN Telemetry Test Matrix", () => {
+describe("SummitMesh Technical QA Matrix", () => {
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
 
-  const program = anchor.workspace.BelgradumEngine as Program<BelgradumEngine>;
-  const admin = web3.Keypair.generate();
-  const nodeOperator = web3.Keypair.generate();
-  const keeper = web3.Keypair.generate();
+  const program = anchor.workspace.SummitMesh as Program<SummitMesh>;
+  const admin = provider.wallet as anchor.Wallet;
 
-  let rewardMint: web3.PublicKey;
-  let engineConfigPda: web3.PublicKey;
-  let escrowVaultPda: web3.PublicKey;
-  let nodeRegistryPda: web3.PublicKey;
-  let nodeAta: web3.PublicKey;
+  const summitId = "BELGRADE-2025";
+  const totalWorkshops = 32;
 
-  const WINDOW_SLOTS = new BN(120);
-  const REWARD_PER_SAMPLE = new BN(500_000); // 0.5 tokens (decimals = 6)
-  const hardwareId = Array.from(Buffer.from("BG-BELGRADE-0001", "utf-8"));
+  let summitStatePda: PublicKey;
+  let summitBump: number;
+
+  const attendee = Keypair.generate();
+  const ephemeralSession = Keypair.generate();
+  let attendeeRecordPda: PublicKey;
+  let sessionRecordPda: PublicKey;
 
   before(async () => {
-    // Fund test actors
-    for (const actor of [admin, nodeOperator, keeper]) {
-      const sig = await provider.connection.requestAirdrop(
-        actor.publicKey,
-        50 * web3.LAMPORTS_PER_SOL
-      );
-      const latestBlockhash = await provider.connection.getLatestBlockhash();
-      await provider.connection.confirmTransaction({
-        signature: sig,
-        ...latestBlockhash,
-      });
-    }
+    // Airdrop SOL to test wallets
+    const sig1 = await provider.connection.requestAirdrop(attendee.publicKey, 5 * anchor.web3.LAMPORTS_PER_SOL);
+    await provider.connection.confirmTransaction(sig1);
 
-    // Deploy test SPL mint
-    rewardMint = await createMint(
-      provider.connection,
-      admin,
-      admin.publicKey,
-      null,
-      6
-    );
+    const sig2 = await provider.connection.requestAirdrop(ephemeralSession.publicKey, 2 * anchor.web3.LAMPORTS_PER_SOL);
+    await provider.connection.confirmTransaction(sig2);
 
-    [engineConfigPda] = web3.PublicKey.findProgramAddressSync(
-      [Buffer.from("engine_config"), admin.publicKey.toBuffer()],
+    [summitStatePda, summitBump] = PublicKey.findProgramAddressSync(
+      [Buffer.from("summit"), Buffer.from(summitId)],
       program.programId
     );
 
-    [escrowVaultPda] = web3.PublicKey.findProgramAddressSync(
-      [Buffer.from("escrow"), engineConfigPda.toBuffer()],
+    [attendeeRecordPda] = PublicKey.findProgramAddressSync(
+      [Buffer.from("attendee"), summitStatePda.toBuffer(), attendee.publicKey.toBuffer()],
       program.programId
     );
 
-    [nodeRegistryPda] = web3.PublicKey.findProgramAddressSync(
-      [
-        Buffer.from("node"),
-        engineConfigPda.toBuffer(),
-        nodeOperator.publicKey.toBuffer(),
-      ],
+    [sessionRecordPda] = PublicKey.findProgramAddressSync(
+      [Buffer.from("session"), summitStatePda.toBuffer(), attendee.publicKey.toBuffer()],
       program.programId
-    );
-
-    nodeAta = await createAccount(
-      provider.connection,
-      nodeOperator,
-      rewardMint,
-      nodeOperator.publicKey
     );
   });
 
-  it("Initializes Engine with Config and Escrow Vault", async () => {
+  it("1. Initializes the Solana Summit Serbia State Record", async () => {
     const tx = await program.methods
-      .initializeEngine(WINDOW_SLOTS, REWARD_PER_SAMPLE)
+      .initializeSummit(summitId, totalWorkshops, true)
       .accounts({
-        config: engineConfigPda,
-        rewardMint: rewardMint,
-        escrowVault: escrowVaultPda,
+        summitState: summitStatePda,
         admin: admin.publicKey,
-        systemProgram: web3.SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        rent: web3.SYSVAR_RENT_PUBKEY,
+        systemProgram: SystemProgram.programId,
       })
-      .signers([admin])
       .rpc();
 
-    // Fund reward escrow vault
-    await mintTo(
-      provider.connection,
-      admin,
-      rewardMint,
-      escrowVaultPda,
-      admin,
-      100_000_000_000
-    );
-
-    const configAccount = await program.account.engineConfig.fetch(engineConfigPda);
-    expect(configAccount.admin.toBase58()).to.equal(admin.publicKey.toBase58());
-    expect(configAccount.settlementWindowSlots.toNumber()).to.equal(120);
-    expect(configAccount.rewardPerSample.toNumber()).to.equal(500_000);
+    const state = await program.account.summitState.fetch(summitStatePda);
+    expect(state.summitId).to.equal(summitId);
+    expect(state.admin.toBase58()).to.equal(admin.publicKey.toBase58());
+    expect(state.totalWorkshops).to.equal(totalWorkshops);
+    expect(state.transferabilityLocked).to.be.true;
+    expect(state.totalAttendees.toNumber()).to.equal(0);
   });
 
-  it("Registers Edge Hardware Node under deterministic PDA", async () => {
+  it("2. Registers an Attendee and Initializes Credential Bitmask", async () => {
     await program.methods
-      .registerNode(hardwareId, 1)
+      .initializeAttendee()
       .accounts({
-        config: engineConfigPda,
-        nodeRegistry: nodeRegistryPda,
-        nodeAuthority: nodeOperator.publicKey,
-        systemProgram: web3.SystemProgram.programId,
+        summitState: summitStatePda,
+        attendeeRecord: attendeeRecordPda,
+        attendee: attendee.publicKey,
+        systemProgram: SystemProgram.programId,
       })
-      .signers([nodeOperator])
+      .signers([attendee])
       .rpc();
 
-    const nodeAccount = await program.account.nodeRegistry.fetch(nodeRegistryPda);
-    expect(nodeAccount.nodeAuthority.toBase58()).to.equal(
-      nodeOperator.publicKey.toBase58()
-    );
-    expect(nodeAccount.totalSamplesSubmitted.toNumber()).to.equal(0);
+    const record = await program.account.attendeeRecord.fetch(attendeeRecordPda);
+    expect(record.attendee.toBase58()).to.equal(attendee.publicKey.toBase58());
+    expect(record.attendanceMask.toNumber()).to.equal(0);
+    expect(record.accumulatedXp).to.equal(0);
   });
 
-  it("Executes zero-copy telemetry batch ingest with Ed25519 precompile guard", async () => {
-    const currentSlot = await provider.connection.getSlot();
-    const epochIndex = new BN(Math.floor(currentSlot / WINDOW_SLOTS.toNumber()));
+  it("3. Delegates a 4-Hour Ephemeral Session Key to Mobile Device", async () => {
+    const fourHoursInSeconds = new anchor.BN(4 * 3600);
 
-    const [bufferPda] = web3.PublicKey.findProgramAddressSync(
-      [
-        Buffer.from("buffer"),
-        nodeRegistryPda.toBuffer(),
-        epochIndex.toArrayLike(Buffer, "le", 8),
-      ],
-      program.programId
-    );
-
-    // Mock telemetry samples
-    const mockTelemetryBatch = Array.from({ length: 8 }).map((_, i) => ({
-      timestamp: new BN(Math.floor(Date.now() / 1000) + i),
-      metricValue: new BN(220_000 + i * 50), // 220V fluctuation
-      varianceIndex: i,
-      errorFlags: 0,
-      reserved: [0, 0, 0, 0, 0, 0, 0, 0],
-    }));
-
-    // Generate signed payload for Ed25519 precompile
-    const message = Buffer.from("BELGRADUM_NODE_TELEMETRY_PAYLOAD_V1");
-    const edKeyPair = nacl.sign.keyPair();
-    const signature = nacl.sign.detached(message, edKeyPair.secretKey);
-
-    const ed25519Ix = web3.Ed25519Program.createInstructionWithPublicKey({
-      publicKey: edKeyPair.publicKey,
-      message: message,
-      signature: signature,
-    });
-
-    const ingestIx = await program.methods
-      .ingestTelemetryBatch(epochIndex, mockTelemetryBatch)
+    await program.methods
+      .delegateSession(ephemeralSession.publicKey, fourHoursInSeconds)
       .accounts({
-        config: engineConfigPda,
-        nodeRegistry: nodeRegistryPda,
-        telemetryBuffer: bufferPda,
-        nodeAuthority: nodeOperator.publicKey,
-        instructionSysvar: web3.SYSVAR_INSTRUCTIONS_PUBKEY,
-        systemProgram: web3.SystemProgram.programId,
+        sessionRecord: sessionRecordPda,
+        summitState: summitStatePda,
+        attendee: attendee.publicKey,
+        systemProgram: SystemProgram.programId,
       })
-      .instruction();
+      .signers([attendee])
+      .rpc();
 
-    const tx = new web3.Transaction().add(ed25519Ix).add(ingestIx);
-
-    const txSignature = await web3.sendAndConfirmTransaction(
-      provider.connection,
-      tx,
-      [nodeOperator]
-    );
-
-    // Verify Compute Units and Zero-Copy buffer mapping
-    const txDetails = await provider.connection.getTransaction(txSignature, {
-      commitment: "confirmed",
-    });
-    console.log(`\tBatch Ingestion CU Consumed: ${txDetails?.meta?.computeUnitsConsumed} CU`);
-
-    const bufferAccount = await program.account.telemetryBuffer.fetch(bufferPda);
-    expect(bufferAccount.sampleCount).to.equal(8);
-    expect(bufferAccount.samples[0].metricValue.toNumber()).to.equal(220_000);
+    const session = await program.account.sessionRecord.fetch(sessionRecordPda);
+    expect(session.sessionSigner.toBase58()).to.equal(ephemeralSession.publicKey.toBase58());
+    expect(session.attendee.toBase58()).to.equal(attendee.publicKey.toBase58());
   });
 
-  it("Rejects telemetry batch missing Ed25519 precompile verification", async () => {
-    const currentSlot = await provider.connection.getSlot();
-    const epochIndex = new BN(Math.floor(currentSlot / WINDOW_SLOTS.toNumber()));
+  it("4. Ephemeral Key Check-In at Workshop #0 (Frictionless Execution)", async () => {
+    const workshopId = 0;
+    const xpPoints = 250;
 
-    const [bufferPda] = web3.PublicKey.findProgramAddressSync(
-      [
-        Buffer.from("buffer"),
-        nodeRegistryPda.toBuffer(),
-        epochIndex.toArrayLike(Buffer, "le", 8),
-      ],
-      program.programId
-    );
+    await program.methods
+      .recordWorkshopAttendance(workshopId, xpPoints)
+      .accounts({
+        summitState: summitStatePda,
+        attendeeRecord: attendeeRecordPda,
+        caller: ephemeralSession.publicKey,
+        sessionRecord: sessionRecordPda,
+      })
+      .signers([ephemeralSession])
+      .rpc();
 
-    const mockTelemetryBatch = Array.from({ length: 8 }).map(() => ({
-      timestamp: new BN(Math.floor(Date.now() / 1000)),
-      metricValue: new BN(220_100),
-      varianceIndex: 1,
-      errorFlags: 0,
-      reserved: [0, 0, 0, 0, 0, 0, 0, 0],
-    }));
+    const record = await program.account.attendeeRecord.fetch(attendeeRecordPda);
+    // Bit 0 must be set (mask == 1)
+    expect(record.attendanceMask.toNumber()).to.equal(1);
+    expect(record.accumulatedXp).to.equal(250);
+  });
 
-    // Ingest WITHOUT Ed25519 instruction in bundle
+  it("5. Rejects Double-Claim / Re-attendance on Same Workshop", async () => {
+    let failed = false;
     try {
       await program.methods
-        .ingestTelemetryBatch(epochIndex, mockTelemetryBatch)
+        .recordWorkshopAttendance(0, 250)
         .accounts({
-          config: engineConfigPda,
-          nodeRegistry: nodeRegistryPda,
-          telemetryBuffer: bufferPda,
-          nodeAuthority: nodeOperator.publicKey,
-          instructionSysvar: web3.SYSVAR_INSTRUCTIONS_PUBKEY,
-          systemProgram: web3.SystemProgram.programId,
+          summitState: summitStatePda,
+          attendeeRecord: attendeeRecordPda,
+          caller: ephemeralSession.publicKey,
+          sessionRecord: sessionRecordPda,
         })
-        .signers([nodeOperator])
+        .signers([ephemeralSession])
         .rpc();
-      assert.fail("Should have thrown MissingSignatureVerification error");
     } catch (err: any) {
-      expect(err.error.errorCode.code).to.equal("MissingSignatureVerification");
+      failed = true;
+      expect(err.error.errorCode.code).to.equal("WorkshopAlreadyAttended");
     }
+    expect(failed).to.be.true;
   });
 
-  it("Settles epoch and reclaims storage rent back to keeper", async () => {
-    // Advance slots beyond settlement window
-    const targetEpoch = new BN(0);
-    const [bufferPda] = web3.PublicKey.findProgramAddressSync(
-      [
-        Buffer.from("buffer"),
-        nodeRegistryPda.toBuffer(),
-        targetEpoch.toArrayLike(Buffer, "le", 8),
-      ],
-      program.programId
-    );
-
-    // Sleep/poll until slot window progresses in local validator
-    let currentEpoch = 0;
-    while (currentEpoch <= targetEpoch.toNumber()) {
-      const slot = await provider.connection.getSlot();
-      currentEpoch = Math.floor(slot / WINDOW_SLOTS.toNumber());
-      await new Promise((res) => setTimeout(res, 400));
-    }
-
-    const keeperBalanceBefore = await provider.connection.getBalance(
-      keeper.publicKey
-    );
+  it("6. Workshop #7 Check-In Correctly Sets Bitmask Position (1 << 7)", async () => {
+    const workshopId = 7;
+    const xpPoints = 500;
 
     await program.methods
-      .settleEpochAndReclaim(targetEpoch)
+      .recordWorkshopAttendance(workshopId, xpPoints)
       .accounts({
-        config: engineConfigPda,
-        nodeRegistry: nodeRegistryPda,
-        telemetryBuffer: bufferPda,
-        escrowVault: escrowVaultPda,
-        nodeTokenAccount: nodeAta,
-        reclaimRecipient: keeper.publicKey,
-        tokenProgram: TOKEN_PROGRAM_ID,
+        summitState: summitStatePda,
+        attendeeRecord: attendeeRecordPda,
+        caller: ephemeralSession.publicKey,
+        sessionRecord: sessionRecordPda,
       })
-      .signers([keeper])
+      .signers([ephemeralSession])
       .rpc();
 
-    // Check reward distribution (8 samples * 500,000 = 4,000,000 units)
-    const tokenBalance = await getAccount(provider.connection, nodeAta);
-    expect(Number(tokenBalance.amount)).to.equal(4_000_000);
+    const record = await program.account.attendeeRecord.fetch(attendeeRecordPda);
+    // Mask: 1 (workshop 0) + (1 << 7 = 128) = 129
+    expect(record.attendanceMask.toNumber()).to.equal(129);
+    expect(record.accumulatedXp).to.equal(750);
+  });
 
-    // Verify buffer account is closed and lamports reclaimed
-    const closedBufferInfo = await provider.connection.getAccountInfo(bufferPda);
-    expect(closedBufferInfo).to.be.null;
+  it("7. Unauthorized Third Party Key is Rejected", async () => {
+    const rogueKeypair = Keypair.generate();
+    const sig = await provider.connection.requestAirdrop(rogueKeypair.publicKey, anchor.web3.LAMPORTS_PER_SOL);
+    await provider.connection.confirmTransaction(sig);
 
-    const keeperBalanceAfter = await provider.connection.getBalance(
-      keeper.publicKey
-    );
-    expect(keeperBalanceAfter).to.be.greaterThan(keeperBalanceBefore);
+    let failed = false;
+    try {
+      await program.methods
+        .recordWorkshopAttendance(3, 100)
+        .accounts({
+          summitState: summitStatePda,
+          attendeeRecord: attendeeRecordPda,
+          caller: rogueKeypair.publicKey,
+          sessionRecord: sessionRecordPda,
+        })
+        .signers([rogueKeypair])
+        .rpc();
+    } catch (err: any) {
+      failed = true;
+      expect(err.error.errorCode.code).to.equal("UnauthorizedSigner");
+    }
+    expect(failed).to.be.true;
   });
 });

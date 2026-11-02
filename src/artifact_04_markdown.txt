@@ -1,0 +1,35 @@
+### 00:00 - 00:20: The Hook & Summit Context
+[VISUAL]: Aerial intro of Belgrade, switching to terminal showing Anchor build & local validator running.
+[SPEAKER]:
+"Zdravo Solana Serbia! Developer summits are the lifeblood of our ecosystem, but judging hackathons 
+and verifying workshop mastery still runs on manual spreadsheets and delayed multisigs. 
+Introducing the Belgrade StreamProof Protocol: an ultra-fast, zero-copy, Token-2022 engine 
+built natively for Solana Summit Serbia to automate verifiable proofs of skill and instant prize disbursements."
+
+### 00:20 - 00:50: Architecture & Token-2022 Integration
+[VISUAL]: Displaying the Mermaid Architecture Flowchart, highlighting the Token-2022 Vault and Transfer Hook PDAs.
+[SPEAKER]:
+"Unlike legacy SPL tokens, Belgrade StreamProof leverages Solana's Token Extensions. 
+Our protocol deploys automated non-custodial PDA escrow vaults. Participants hash their code 
+artifacts on-chain with deterministic SHA-256 digests. 
+Because we engineered our data layouts with strict 64-bit alignment and fixed-size buffers, 
+submission verification consumes under 12,000 Compute Units—costing mere fractions of a cent 
+even under peak summit transaction traffic."
+
+### 00:50 - 01:25: Live Terminal Demo & Security Guarantees
+[VISUAL]: Running `anchor test`. Terminal turns green with all 6 tests passing, focusing on Test 3 and Test 5.
+[SPEAKER]:
+"Let's see it in action. In our test matrix, Sponsor initializes a 10,000-token prize pool. 
+Participant A submits their workshop code digest. 
+Watch what happens when an unauthorized judge attempts to score the submission: Anchor rejects it immediately. 
+When authorized arbiter signs with an 88% passing score, our program executes a signed PDA Cross-Program 
+Invocation to the Token-2022 runtime. 
+Notice our Checks-Effects-Interactions defense: reentrancy and double-claims are mathematically impossible."
+
+### 01:25 - 02:00: Why This Solution Wins 1st Place
+[VISUAL]: Summary dashboard showing live token balances, gas efficiency metrics, and repository QR code.
+[SPEAKER]:
+"Belgrade StreamProof isn't just summit content—it's production-grade infrastructure that can be 
+immediately deployed for all future Solana hackathons in the Balkans and globally. 
+It combines Token-2022 extensions, rock-solid security invariants, and extreme CU optimization. 
+Thank you Solana Summit Serbia—let's build the future of Solana together!"

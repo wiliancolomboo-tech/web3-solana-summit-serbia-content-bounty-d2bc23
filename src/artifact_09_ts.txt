@@ -1,0 +1,3 @@
+await program.methods.initializeConfig(keeper.publicKey)
+  .accounts({ admin: admin.publicKey, config: configPda, systemProgram: SystemProgram.programId })
+  .signers([admin]).rpc();

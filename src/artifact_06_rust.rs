@@ -1,0 +1,1 @@
+constraint = project_account.team_wallet == team_token_account.owner @ SummitStreamError::InvalidRecipientTokenAccount

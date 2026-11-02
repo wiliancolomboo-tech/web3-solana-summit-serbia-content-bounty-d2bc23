@@ -1,0 +1,2 @@
+await program.methods.castVote(new BN(eventId), authorPubkey, 9)
+  .accounts({...}).signers([judge]).rpc();

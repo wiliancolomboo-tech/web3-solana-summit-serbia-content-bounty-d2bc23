@@ -1,0 +1,88 @@
+{
+  "deliverable_id": "superteam_92cbc5d2bc23",
+  "opportunity_id": "st-9ceadd2f-8887-416f-890e-ab07824660e5",
+  "platform": "SuperteamEarn",
+  "title": "Solana Summit Serbia Content Bounty: $10,000 for the best summit content",
+  "url": "https://earn.superteam.fun/listings/bounty/solana-summit-serbia-content",
+  "budget": "10,000 USDG",
+  "prize_amount": 10000.0,
+  "ecosystem": "Solana",
+  "github_url": "https://github.com/wiliancolomboo-tech/web3-solana-summit-serbia-content-bounty-d2bc23",
+  "status": "ready_for_submission",
+  "validation_reports": [
+    {
+      "file": "artifact_01_mermaid.txt",
+      "language": "mermaid",
+      "valid": true,
+      "error": null
+    },
+    {
+      "file": "artifact_02_rust.rs",
+      "language": "rust",
+      "valid": true,
+      "error": null
+    },
+    {
+      "file": "artifact_03_typescript.ts",
+      "language": "typescript",
+      "valid": true,
+      "error": null
+    },
+    {
+      "file": "artifact_04_txt.txt",
+      "language": "txt",
+      "valid": true,
+      "error": null
+    },
+    {
+      "file": "artifact_05_txt.txt",
+      "language": "txt",
+      "valid": true,
+      "error": null
+    },
+    {
+      "file": "artifact_06_bash.sh",
+      "language": "bash",
+      "valid": true,
+      "error": null
+    },
+    {
+      "file": "artifact_07_toml.toml",
+      "language": "toml",
+      "valid": true,
+      "error": null
+    },
+    {
+      "file": "artifact_08_bash.sh",
+      "language": "bash",
+      "valid": true,
+      "error": null
+    },
+    {
+      "file": "artifact_09_bash.sh",
+      "language": "bash",
+      "valid": true,
+      "error": null
+    },
+    {
+      "file": "artifact_10_bash.sh",
+      "language": "bash",
+      "valid": true,
+      "error": null
+    },
+    {
+      "file": "artifact_11_text.txt",
+      "language": "text",
+      "valid": true,
+      "error": null
+    },
+    {
+      "file": "artifact_12_bash.sh",
+      "language": "bash",
+      "valid": true,
+      "error": null
+    }
+  ],
+  "git_initialized": true,
+  "created_at": "2026-09-10 22:03:22"
+}

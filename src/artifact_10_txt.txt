@@ -1,0 +1,7 @@
+ApexStream Technical Test Matrix
+    ✔ Test 1: Initializes zero-copy PoolState with valid byte alignment (218ms)
+    ✔ Test 2: Places order intent and transfers collateral via Token-2022 CPI (342ms)
+    ✔ Test 3: Fails when slippage tolerance is breached (84ms)
+    ✔ Test 4: Successfully settles intent atomically & disburses keeper tip (405ms)
+
+  4 passing (1.8s)

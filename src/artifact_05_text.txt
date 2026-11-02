@@ -1,0 +1,10 @@
+morava-protocol/
+├── Anchor.toml
+├── Cargo.toml
+├── programs/
+│   └── morava-protocol/
+│       ├── Cargo.toml
+│       └── src/
+│           └── lib.rs
+└── tests/
+    └── morava-protocol.ts

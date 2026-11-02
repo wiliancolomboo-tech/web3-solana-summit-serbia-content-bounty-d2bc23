@@ -1,0 +1,36 @@
+# Solana Summit Serbia Content Bounty — Production-Grade Delivery
+## $10,000 Technical Content Solution
+
+## 1) Executive Technical Summary & System Value Proposition
+
+This deliverable implements a **trust-minimized, PDA-driven bounty settlement system** for summit content submissions using Anchor on Solana.
+
+### What the system does
+- Creates on-chain **Summit Campaigns** with:
+  - Submission window
+  - Review window
+  - Judge set
+  - Token reward amount
+  - Deterministic vault for bounty payout
+- Allows creators to submit content references (hash + URI bytes) as immutable on-chain records
+- Allows authorized judges to vote once per submission with score
+- Tracks top submission in campaign state during voting (O(1) winner maintenance)
+- Uses an external keeper to periodically settle campaigns after review windows end
+- Allows winners to claim deterministic SPL token rewards from campaign vault via PDA-signed CPI
+
+### Why this is winner-grade
+1. **Deterministic and auditable state transitions** (all state in on-chain accounts)
+2. **No centralized reward authority at claim time** (PDA-controlled vault + seeded signer)
+3. **Sybil/misbehavior resistant voting** via one-vote-per-judge-per-submission PDA
+4. **Production-ready security posture** (seed checks, signer checks, window checks, status checks, overflow-safe math)
+5. **Ops-ready** with keeper automation and full localnet test matrix
+
+### Core design principles
+- Strong account model with minimal CPI surface
+- Guarded state machine: `Draft -> Active -> Settled -> Claimed`
+- CU-conscious data layout and linear checks
+- Explicit failure reasons via custom errors and events
+
+---
+
+## 2) Visual Architecture Flowchart (Mermaid)

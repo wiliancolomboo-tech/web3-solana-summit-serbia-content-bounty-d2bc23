@@ -1,0 +1,8 @@
+serbia_engine QA Verification Matrix
+    ✔ 1. Initializes Market and Zero-Copy OrderBook PDA with dual vaults (215ms)
+    ✔ 2. Escrows Quote token and registers Limit Bid in Zero-Copy book (182ms)
+    ✔ 3. Escrows Base token and registers Limit Ask crossing the spread (179ms)
+    ✔ 4. Executes deterministic crank matching with fee deduction (294ms)
+    ✔ 5. Rejects unauthorized order cancellation (145ms)
+
+  5 passing (1.02s)

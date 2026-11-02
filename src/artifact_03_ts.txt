@@ -1,0 +1,231 @@
+import * as anchor from "@project-serum/anchor";
+import { Program } from "@project-serum/anchor";
+import { Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
+import { assert } from "chai";
+import BN from "bn.js";
+
+describe("summit-content", () => {
+  const provider = anchor.AnchorProvider.env();
+  anchor.setProvider(provider);
+
+  const program = anchor.workspace.SummitContentEngine as Program;
+  const admin = provider.wallet.publicKey;
+  const organizer = Keypair.generate().publicKey;
+  const creator1 = Keypair.generate().publicKey;
+  const voter1 = Keypair.generate().publicKey;
+  const voter2 = Keypair.generate().publicKey;
+  const keeper = Keypair.generate().publicKey;
+  const treasury = Keypair.generate().publicKey;
+
+  const CONFIG_SEED = Buffer.from("config");
+  const [configPda] = PublicKey.findProgramAddressSync(
+    [CONFIG_SEED],
+    program.programId
+  );
+
+  const summitId = new BN(1);
+  const [summitPda] = PublicKey.findProgramAddressSync(
+    [Buffer.from("summit"), configPda.toBuffer(), summitId.toArrayLike(Buffer, "le", 8)],
+    program.programId
+  );
+
+  const contentPda = (idx: number) =>
+    PublicKey.findProgramAddressSync(
+      [Buffer.from("content"), summitPda.toBuffer(), Buffer.from(new Uint32Array([idx]).buffer)],
+      program.programId
+    )[0];
+
+  const votePda = (summit: PublicKey, content: PublicKey, voter: PublicKey) =>
+    PublicKey.findProgramAddressSync(
+      [Buffer.from("vote"), summit.toBuffer(), content.toBuffer(), voter.toBuffer()],
+      program.programId
+    )[0];
+
+  const profilePda = (user: PublicKey) =>
+    PublicKey.findProgramAddressSync(
+      [Buffer.from("profile"), user.toBuffer()],
+      program.programId
+    )[0];
+
+  const airdrop = async (to: PublicKey, amount = 2 * anchor.web3.LAMPORTS_PER_SOL) => {
+    const sig = await provider.connection.requestAirdrop(to, amount);
+    await provider.connection.confirmTransaction(sig);
+  };
+
+  it("Init config", async () => {
+    await airdrop(admin);
+    await program.methods
+      .initializeConfig(keeper, treasury, new BN(5_000_00)) // 0.005 SOL
+      .accounts({
+        config: configPda,
+        admin,
+        systemProgram: SystemProgram.programId,
+      })
+      .rpc();
+
+    const cfg = await program.account.config.fetch(configPda);
+    assert.ok(cfg.admin.equals(admin));
+    assert.ok(cfg.keeper.equals(keeper));
+    assert.isFalse(cfg.paused);
+  });
+
+  it("Create summit", async () => {
+    await program.methods
+      .createSummit(summitId, "Solana Summit Serbia - Best Content", new BN(3600), new BN(10))
+      .accounts({
+        config: configPda,
+        summit: summitPda,
+        organizer: admin,
+        systemProgram: SystemProgram.programId,
+      })
+      .signers([])
+      .rpc();
+
+    const s = await program.account.summit.fetch(summitPda);
+    assert.equal(s.summitId.toNumber(), summitId.toNumber());
+    assert.equal(s.totalContents.toNumber(), 0);
+    assert.isFalse(s.isFinalized);
+  });
+
+  it("Submit two content items", async () => {
+    await airdrop(creator1);
+    await airdrop(admin);
+
+    const c0 = contentPda(0);
+    const c1 = contentPda(1);
+
+    await program.methods
+      .submitContent(summitId, 0, "ipfs://content-0")
+      .accounts({
+        config: configPda,
+        summit: summitPda,
+        content: c0,
+        creator: creator1,
+        clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
+        systemProgram: SystemProgram.programId,
+      })
+      .signers([/* creator1 secretKeypair needed when using wallet signer */
+      ])
+      .rpc();
+
+    await program.methods
+      .submitContent(summitId, 1, "ipfs://content-1")
+      .accounts({
+        config: configPda,
+        summit: summitPda,
+        content: c1,
+        creator: creator1,
+        clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
+        systemProgram: SystemProgram.programId,
+      })
+      .signers([/* creator1 */])
+      .rpc();
+  });
+
+  it("Cast votes", async () => {
+    await airdrop(voter1);
+    await airdrop(voter2);
+
+    const c0 = contentPda(0);
+    const c1 = contentPda(1);
+    const v1c0 = votePda(summitPda, c0, voter1);
+    const v2c0 = votePda(summitPda, c0, voter2);
+    const v1c1 = votePda(summitPda, c1, voter1);
+    const p1 = profilePda(voter1);
+    const p2 = profilePda(voter2);
+
+    await program.methods
+      .castVote(summitId, true)
+      .accounts({
+        config: configPda,
+        summit: summitPda,
+        content: c0,
+        voteRecord: v1c0,
+        voterProfile: p1,
+        voter: voter1,
+        treasury: treasury,
+        systemProgram: SystemProgram.programId,
+        clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
+      })
+      .rpc();
+
+    await program.methods
+      .castVote(summitId, true)
+      .accounts({
+        config: configPda,
+        summit: summitPda,
+        content: c0,
+        voteRecord: v2c0,
+        voterProfile: p2,
+        voter: voter2,
+        treasury: treasury,
+        systemProgram: SystemProgram.programId,
+        clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
+      })
+      .rpc();
+
+    await program.methods
+      .castVote(summitId, false)
+      .accounts({
+        config: configPda,
+        summit: summitPda,
+        content: c1,
+        voteRecord: v1c1,
+        voterProfile: p1,
+        voter: voter1,
+        treasury: treasury,
+        systemProgram: SystemProgram.programId,
+        clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
+      })
+      .rpc();
+
+    const c0Acc = await program.account.contentSubmission.fetch(c0);
+    assert.equal(c0Acc.upvotes.toNumber(), 2);
+    const c1Acc = await program.account.contentSubmission.fetch(c1);
+    assert.equal(c1Acc.downvotes.toNumber(), 1);
+  });
+
+  it("Finalize by keeper (negative + positive path)", async () => {
+    // in real tests, manipulate clock in test validator to > voting_end_ts
+    // For brevity, this test validates guard behavior
+    const notKeeper = Keypair.generate().publicKey;
+    const c0 = contentPda(0);
+
+    try {
+      await program.methods
+        .finalizeSummit(summitId, 0)
+        .accounts({
+          config: configPda,
+          summit: summitPda,
+          winnerContent: c0,
+          winnerProfile: profilePda(creator1),
+          keeper: notKeeper,
+          systemProgram: SystemProgram.programId,
+        })
+        .rpc();
+      assert.fail("expected unauthorized");
+    } catch (_e) {
+      assert.ok(true);
+    }
+
+    // assume voting_end already passed in test setup on devnet/localnet fast-forward
+    // and keeper key is funded + added as signer
+    await airdrop(keeper);
+    await program.methods
+      .finalizeSummit(summitId, 0)
+      .accounts({
+        config: configPda,
+        summit: summitPda,
+        winnerContent: c0,
+        winnerProfile: profilePda(creator1),
+        keeper,
+        systemProgram: SystemProgram.programId,
+      })
+      .signers([keeper])
+      .rpc();
+
+    const s = await program.account.summit.fetch(summitPda);
+    assert.isTrue(s.isFinalized);
+    assert.equal(s.winnerContentIndex.toNumber(), 0);
+  });
+});

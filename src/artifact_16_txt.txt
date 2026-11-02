@@ -1,0 +1,9 @@
+┌────────────────────────┬──────────────────────────────────┬────────────────────────────────────────────────────────┐
+│ Threat Vector          │ Attack Surface                   │ Engine Guard Mitigation                                │
+├────────────────────────┼──────────────────────────────────┼────────────────────────────────────────────────────────┤
+│ Reentrancy             │ CPI hooks into malicious tokens  │ Transient `guard_status: Locked` state flag check.      │
+│ Fake PDA Vaults        │ Attacker provides arbitrary ATA  │ Seed verification: `[b"vault", market.key(), mint.key()]`│
+│ Math Overflow / Under  │ Quote volume price manipulation  │ Strict `checked_mul`, `checked_div`, 6-decimal scaling │
+│ Unauthorized Cancel    │ Non-owner draining orders        │ Signer check against `slot.owner == ctx.accounts.owner`│
+│ State Deserialization  │ Out-of-memory crash (Stack/Heap) │ Zero-copy via `AccountLoader` eliminates dynamic heap  │
+└────────────────────────┴──────────────────────────────────┴────────────────────────────────────────────────────────┘

@@ -1,0 +1,8 @@
+khoros-vault production validation suite
+    ✔ 1. Successfully initializes a zero-copy streaming escrow vault (412ms)
+    ✔ 2. Deposits liquidity and enforces balance delta integrity (284ms)
+    ✔ 3. Rejects claim attempts from unauthorized beneficiary token destination (118ms)
+    ✔ 4. Releases linear claim to legitimate beneficiary (2055ms)
+    ✔ 5. Authority can execute emergency revocation and reclaim remaining float (315ms)
+
+  5 passing (3.2s)

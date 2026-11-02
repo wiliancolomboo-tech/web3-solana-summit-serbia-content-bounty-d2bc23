@@ -1,0 +1,5 @@
+await program.methods.submitContent(
+  new BN(eventId),
+  "ipfs://...",
+  "AI track demo and notes"
+).accounts({...}).rpc();

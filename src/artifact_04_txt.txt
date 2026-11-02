@@ -1,0 +1,12 @@
++--------------------------+------------------------------------+------------------------------------------------------------+
+| Attack Vector            | Vulnerability Risk                 | Program Defense Implementation                             |
++--------------------------+------------------------------------+------------------------------------------------------------+
+| Double Check-In / Replay | Attendee shares QR with friends    | `require!(!ticket.is_checked_in)` & atomic bool flip.      |
+| Fake Kiosk / Signer Spoof| Attacker checks in unauthorized ID | Deterministic PDA seed validation:                         |
+|                          |                                    | `seeds = [b"session", event.key(), attendee.key()]`.       |
+| Key Stealing / Phishing  | Kiosk compromises attendee keys    | Ephemeral Session keys have zero financial permissions.    |
+| Session Hijacking        | Stolen ephemeral key used later    | Strict timestamp expiration: `current_time <= valid_until`.|
+| Escrow Drain             | Attacker calls `withdraw_proceeds` | Anchor constraint `has_one = authority` checks authority. |
+| Lamport Zero-Out Crash   | Program closes vault below rent    | Vault enforces `Rent::minimum_balance(0)` preservation.    |
+| Arithmetic Overflow      | Overflowing ticket counters        | Checked arithmetic (`checked_add`, `checked_sub`) in Rust.|
++--------------------------+------------------------------------+------------------------------------------------------------+

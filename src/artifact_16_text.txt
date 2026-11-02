@@ -1,0 +1,11 @@
+SUB-ZERO: Summit Attestation & Rent Reclamation Test Suite
+    ✔ 1. Initializes the Summit Configuration PDA with canonical bump (412ms)
+    Attestation Issued Successfully. TxSig: 5Kj1...
+    ✔ 2. Issues Attestation utilizing Atomic Ed25519 Precompile & Zero-Copy Storage (485ms)
+    ✔ 3. Prevents Attestation Replay Attack (122ms)
+    ✔ 4. Enforces Time-Lock: Rejects premature rent reclamation (89ms)
+    Waiting 5 seconds for summit validity period to elapse...
+    Rent Reclaimed: 100% of Lamports Returned to Summit Treasury.
+    ✔ 5. Reclaims Rent-Exempt Lamports post-summit expiration (5105ms)
+
+  5 passing (6.2s)

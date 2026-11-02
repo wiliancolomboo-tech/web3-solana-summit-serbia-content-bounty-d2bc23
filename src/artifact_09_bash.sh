@@ -1,1 +1,1 @@
-anchor build
+solana address -k target/deploy/summit_pass-keypair.json

@@ -1,0 +1,20 @@
+┌─────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                 VULNERABILITY DEFENSE MATRIX                                │
+├──────────────────────────┬─────────────────────────────────┬────────────────────────────────┤
+│ Attack Vector            │ Failure Impact Without Guard    │ SummitPulse Defensive Controls │
+├──────────────────────────┼─────────────────────────────────┼────────────────────────────────┤
+│ 1. PDA Spoofing          │ Attacker injects rogue escrow   │ Deterministic 3-tier seed tree │
+│                          │ stealing bounty lamports        │ ['vault', question_pda] checked│
+├──────────────────────────┼─────────────────────────────────┼────────────────────────────────┤
+│ 2. Arbitrary Signer CPI  │ Malicious caller changes payee  │ `has_one = authority`,         │
+│    Substitution          │ draining protocol funds         │ `has_one = speaker` checks     │
+├──────────────────────────┼─────────────────────────────────┼────────────────────────────────┤
+│ 3. Integer Overflow /    │ Staked bounty totals loop to 0  │ Strict `.checked_add()`,       │
+│    Truncation            │ or mint unbacked withdrawals    │ `.checked_mul()`, `.ok_or()`   │
+├──────────────────────────┼─────────────────────────────────┼────────────────────────────────┤
+│ 4. Reentrancy Settlement │ Draining vault via multi-calls  │ Status toggled to Answered     │
+│                          │ in CPI callbacks                │ and lamports zeroed atomically │
+├──────────────────────────┼─────────────────────────────────┼────────────────────────────────┤
+│ 5. Frontrunning Gas-Grief│ Miner frontruns bounty payout   │ Session-bound dispute window   │
+│                          │ with late invalid submissions   │ and slot-indexed creations     │
+└──────────────────────────┴─────────────────────────────────┴────────────────────────────────┘

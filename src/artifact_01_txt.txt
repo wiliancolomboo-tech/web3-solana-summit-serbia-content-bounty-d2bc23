@@ -1,11 +1,18 @@
-+--------------------------------------------------------------------------------------------------+
-|                                    PROJECT BELGRADUM VALUE MATRIX                                |
-+------------------------------------+----------------------------------+--------------------------+
-| Metric                             | Standard Borsh / Anchor State    | Belgradum Zero-Copy Engine|
-+------------------------------------+----------------------------------+--------------------------+
-| Compute Units (Batch Ingest - 8x)  | ~72,400 CU                       | ~14,200 CU (-80.4%)      |
-| Heap Allocations per Ingestion     | Dynamic Vectors / Realloc        | 0 bytes (In-place slice) |
-| Account Reentrancy Protection      | Runtime Mutex / Check-Effects    | Seed-bound PDA Isolation |
-| Rent Reclaim Strategy              | Manual Close Instructions        | Ephemeral Epoch Reclaims |
-| Signature Verification Overhead    | Ed25519 Instruction (Manual CPI) | Native Precompile Offset |
-+------------------------------------+----------------------------------+--------------------------+
++----------------------------------------------------------------------------------------------------+
+|                                    SUMMITMESH ARCHITECTURE                                         |
++----------------------------------------------------------------------------------------------------+
+|  [Attendee Wallet]                                                                                 |
+|         │                                                                                          |
+|         ├── (1) Issue Ephemeral Session Key  ───► [Session Authority PDA] (12-hour TTL)            |
+|         │                                                                                          |
+|  [Ephemeral Keypair]                                                                               |
+|         ├── (2) High-Frequency Workshop Check-In ──► [Summit Registry Engine]                      |
+|         │                                                   │                                      |
+|         │                                                   ├──► Bitwise OR Attendance Bitmap      |
+|         │                                                   └──► Auto-Mint Workshop XP Voucher     |
+|         │                                                                                          |
+|  [SPL Token-2022 Badge]                                                                            |
+|         └── (3) Dynamic Transfer ──────────────► [Transfer Hook Guard Program]                     |
+|                                                             │                                      |
+|                                                             └──► Verified Registrar Signature Auth |
++----------------------------------------------------------------------------------------------------+

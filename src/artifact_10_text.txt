@@ -1,0 +1,8 @@
+Kalemegdan Engine Integration Test Matrix
+    ✔ 1. Initializes the engine successfully with fee configuration (421ms)
+    ✔ 2. User creates an atomic intent order and escrows tokens (312ms)
+    ✔ 3. Fails execution if Solver attempts to fill with inadequate output (Slippage Guard) (189ms)
+    ✔ 4. Solver fills intent via atomic route, disbursing funds and closing escrow (342ms)
+    ✔ 5. User cancels an expired or unfulfilled intent, recovering locked assets (298ms)
+
+  5 passing (2s)

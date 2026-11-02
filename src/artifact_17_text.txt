@@ -1,0 +1,9 @@
+SummitStream Protocol E2E QA Matrix
+    ✔ Initializes Summit Serbia config & Prize Vault PDA with Zero-Copy state (412ms)
+    ✔ Deposits 10,000 USDC into the Prize Vault Escrow via CPI (468ms)
+    ✔ Registers Project Team Alice under Project ID 1 (405ms)
+    ✔ Votes with Quadratic Weighting (100 credits -> 10 effective weight) (3102ms)
+    ✔ Enforces Security Guard: Prevents payout settlement before voting period closes (52ms)
+    ✔ Settles Prize Pool and Streams 100% of Payout to Project 1 Post-Voting (4118ms)
+
+  6 passing (8.6s)
